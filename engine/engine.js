@@ -29,6 +29,31 @@
     });
   }
 
+  // Build a "read in context" link into the work's public-domain source text,
+  // from the per-work `sourceText` config (url + episode/chapter anchor) plus a
+  // browser text-fragment (#:~:text=) that scrolls to and highlights the quote.
+  function srcSnippet(quote) {
+    var s = (quote || "").replace(/^[\s"'’“”–—\-]+/, "");
+    var words = s.split(/\s+/), out = [];
+    for (var i = 0; i < words.length && out.length < 10; i++) {
+      var w = words[i];
+      if (/['’]/.test(w)) break;          // page uses curly ’ → avoid mismatch
+      out.push(w);
+      if (/[.?!]$/.test(w)) break;        // stop at first sentence end
+    }
+    return out.join(" ").replace(/[.,;:?!]+$/, "");
+  }
+  function sourceLink(p) {
+    var st = WORKS[work].sourceText;
+    if (!st || !p.quote) return "";
+    var gn = (p.group != null) ? p.group : p.episode;
+    var anchor = (st.anchor || "").replace("{n2}", String(gn).padStart(2, "0"))
+                                  .replace("{n}", String(gn));
+    var href = st.url + "#" + anchor + ":~:text=" + encodeURIComponent(srcSnippet(p.quote));
+    var label = (st.label && st.label[lang]) || st.label || "source";
+    return '<a class="pop-src" target="_blank" rel="noopener" href="' + href + '">↗ ' + esc(label) + "</a>";
+  }
+
   function popupHtml(p) {
     var t = UI[lang];
     var h = '<div class="pop-name">' + esc(p.name);
@@ -47,10 +72,13 @@
     if (p.gloss) h += '<div class="pop-gloss">' + esc(p.gloss) + "</div>";
     if (p.quote) {
       h += '<div class="pop-quote">' + esc(p.quote);
-      if (p.page) h += '<span class="pop-page">' + t.page + " " + p.page + "</span>";
+      var src = sourceLink(p);
+      if (src) h += src;
+      else if (p.page) h += '<span class="pop-page">' + t.page + " " + p.page + "</span>";
       else if (p.ref) h += '<span class="pop-page">' + esc(p.ref) + "</span>";
       h += "</div>";
     }
+    if (p.verified === false) h += '<div class="pop-unverified">⚠ not yet verified</div>';
     return h;
   }
 
@@ -115,6 +143,7 @@
             (placesByGroup[p.story] || (placesByGroup[p.story] = [])).push({
               name: p.name,
               kind: p.kind || (f.geometry.type === "LineString" ? "route" : "place"),
+              verified: p.verified,
               layer: layer
             });
           }
@@ -161,6 +190,7 @@
       var entries = placesByGroup[g.key] || [];
       var label = lang === "de" ? g.de : g.key;
       if (numbered) label = (idx + 1) + ". " + label;
+      var unverified = entries.some(function (e) { return e.verified === false; });
 
       // ── the group row (click = expand/collapse; swatch = layer on/off) ──
       var item = document.createElement("div");
@@ -169,6 +199,7 @@
         '<span class="caret">▸</span>' +
         '<span class="swatch" style="background:' + g.color + '" title="' + t.toggleLayer + '"></span>' +
         '<span class="story-name">' + esc(label) + "</span>" +
+        (unverified ? '<span class="grp-unverified">unverified yet</span>' : "") +
         '<span class="count">' + entries.length + "</span>";
 
       // ── the collapsible list of this group's places ──
