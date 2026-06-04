@@ -30,8 +30,8 @@
         "de": "Ein kurzer Demo-Rundgang durch Demoville — Punkte, eine Route und Figuren."
       },
       "credit": {
-        "en": "Demo dataset (fictional) · basemap © OpenStreetMap contributors © CARTO",
-        "de": "Demo-Datensatz (fiktiv) · Karte © OpenStreetMap-Mitwirkende © CARTO"
+        "en": "Demo dataset (fictional)",
+        "de": "Demo-Datensatz (fiktiv)"
       },
       "groups": [
         { "key": "Old Town",  "de": "Altstadt",   "color": "#b5651d" },
@@ -51,8 +51,8 @@
         "de": "Eine nummerierte Demo-Tour — zeigt Präfix, Uhrzeit-Chips und Zitate."
       },
       "credit": {
-        "en": "Demo dataset (fictional) · basemap © OpenStreetMap contributors © CARTO",
-        "de": "Demo-Datensatz (fiktiv) · Karte © OpenStreetMap-Mitwirkende © CARTO"
+        "en": "Demo dataset (fictional)",
+        "de": "Demo-Datensatz (fiktiv)"
       },
       "groups": [
         { "key": "Stage One",   "de": "Etappe eins", "color": "#c0392b" },

@@ -308,20 +308,68 @@ header .tagline {
   color: #a05a1a;
 }
 
-/* ── FOOTER (attribution overlay handled by Leaflet; this is the credit line) ── */
+/* ── FOOTER — single credit line (Leaflet's own attribution control is
+   disabled in engine.js; work credit + basemap + Leaflet + Impressum all
+   live here, so nothing overlaps at the bottom of the map) ── */
 .credit {
   position: absolute;
-  left: 328px;
+  right: 6px;
   bottom: 6px;
+  max-width: calc(100% - 340px);   /* stay clear of the 320px sidebar */
   z-index: 500;
   font-family: Georgia, serif;
   font-size: 0.68rem;
+  line-height: 1.35;
+  text-align: right;
   color: var(--ink-soft);
   background: rgba(247, 243, 238, 0.8);
   padding: 0.2em 0.6em;
   border-radius: 4px;
 }
 .credit a { color: var(--ink-soft); }
+.impressum-link { cursor: pointer; border-bottom: 1px solid rgba(60, 40, 20, 0.3); }
+.impressum-link:hover { color: #3a2a1a; border-bottom-color: rgba(60, 40, 25, 0.7); }
+
+/* ── Impressum / about overlay ── */
+#impressum-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 15, 10, 0.45);
+}
+#impressum-modal.open { display: flex; }
+.impressum-box {
+  position: relative;
+  max-width: 560px;
+  max-height: 80vh;
+  overflow: auto;
+  margin: 1em;
+  padding: 1.6em 1.9em;
+  background: var(--panel-bg);
+  color: var(--ink);
+  border-radius: 8px;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.3);
+  font-family: Georgia, serif;
+  line-height: 1.5;
+}
+.impressum-close {
+  position: absolute;
+  top: 0.4em;
+  right: 0.6em;
+  border: none;
+  background: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+.impressum-content h2 { margin-top: 0; font-weight: 300; letter-spacing: 0.05em; }
+.impressum-content h3 { margin-bottom: 0.3em; font-weight: 600; }
+.impressum-content a { color: #6a5037; }
+.impressum-content ul { padding-left: 1.2em; }
 
 /* ── MOBILE ── */
 @media (max-width: 680px) {
@@ -334,5 +382,5 @@ header .tagline {
       "map";
   }
   #sidebar { border-right: none; border-bottom: 1px solid var(--rule); }
-  .credit { left: 6px; }
+  .credit { max-width: calc(100% - 12px); }
 }

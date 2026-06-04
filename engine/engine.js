@@ -279,7 +279,18 @@
     }
     document.getElementById("btnShowAll").textContent = t.showAll;
     document.getElementById("btnHideAll").textContent = t.hideAll;
-    document.getElementById("credit").innerHTML = w.credit[lang];
+    var creditEl = document.getElementById("credit");
+    creditEl.innerHTML = w.credit[lang] + " · " + CFG.basemap.attribution +
+      ' · <a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>';
+    if (CFG.site.impressum) {
+      var imp = document.createElement("a");
+      imp.className = "impressum-link";
+      imp.href = "#";
+      imp.textContent = "Impressum";
+      imp.addEventListener("click", function (e) { e.preventDefault(); showImpressum(); });
+      creditEl.appendChild(document.createTextNode("  ·  "));
+      creditEl.appendChild(imp);
+    }
     var bd = document.getElementById("btnDe"), be = document.getElementById("btnEn");
     if (bd) bd.className = lang === "de" ? "active" : "";
     if (be) be.className = lang === "en" ? "active" : "";
@@ -316,6 +327,25 @@
     });
   }
 
+  // Build a hidden impressum/about overlay from config.site.impressum (HTML).
+  function buildImpressum(htmlStr) {
+    if (document.getElementById("impressum-modal")) return;
+    var m = document.createElement("div");
+    m.id = "impressum-modal";
+    m.innerHTML = '<div class="impressum-box"><button class="impressum-close" type="button" aria-label="Close">×</button>' +
+      '<div class="impressum-content">' + htmlStr + "</div></div>";
+    function close() { m.classList.remove("open"); }
+    m.addEventListener("click", function (e) {
+      if (e.target === m || e.target.classList.contains("impressum-close")) close();
+    });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+    document.body.appendChild(m);
+  }
+  window.showImpressum = function () {
+    var m = document.getElementById("impressum-modal");
+    if (m) m.classList.add("open");
+  };
+
   document.addEventListener("DOMContentLoaded", function () {
     fetch("config.json")
       .then(function (r) { return r.json(); })
@@ -328,11 +358,14 @@
         var st = document.getElementById("site-title");
         if (st) st.textContent = cfg.site.title;
         buildWorkTabs();
+        if (cfg.site.impressum) buildImpressum(cfg.site.impressum);
 
-        map = L.map("map", { zoomControl: true }).setView(cfg.view.center, cfg.view.zoom);
-        L.tileLayer(cfg.basemap.url, {
-          maxZoom: cfg.basemap.maxZoom, attribution: cfg.basemap.attribution
-        }).addTo(map);
+        // Leaflet's own attribution control is disabled: all attribution lives
+        // in the single #credit footer (built in applyLang), so the two no
+        // longer overlap at the bottom of the map.
+        map = L.map("map", { zoomControl: true, attributionControl: false })
+          .setView(cfg.view.center, cfg.view.zoom);
+        L.tileLayer(cfg.basemap.url, { maxZoom: cfg.basemap.maxZoom }).addTo(map);
 
         // Central popup sizing + placement, for every open path (sidebar click
         // or a direct marker click). Cap the height to the map pane (so a long
