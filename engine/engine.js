@@ -33,23 +33,42 @@
   // from the per-work `sourceText` config (url + episode/chapter anchor) plus a
   // browser text-fragment (#:~:text=) that scrolls to and highlights the quote.
   function srcSnippet(quote) {
+    // Pick a contiguous, apostrophe-free run of words to use as the text
+    // fragment. Apostrophes are skipped because the source page uses curly ’
+    // (a straight ' wouldn't match); breaking at the *first* one would yield an
+    // empty snippet for dialogue like "I'm…"/"She's…", so we take the first run
+    // of >=4 such words (falling back to the longest), capped and cut at a
+    // sentence end.
     var s = (quote || "").replace(/^[\s"'’“”–—\-]+/, "");
-    var words = s.split(/\s+/), out = [];
-    for (var i = 0; i < words.length && out.length < 10; i++) {
+    var words = s.split(/\s+/), runs = [], cur = [];
+    function close() { if (cur.length) runs.push(cur); cur = []; }
+    for (var i = 0; i < words.length; i++) {
       var w = words[i];
-      if (/['’]/.test(w)) break;          // page uses curly ’ → avoid mismatch
-      out.push(w);
-      if (/[.?!]$/.test(w)) break;        // stop at first sentence end
+      if (/['’]/.test(w)) { close(); continue; }
+      cur.push(w);
+      if (/[.?!]$/.test(w) || cur.length >= 9) close();
     }
-    return out.join(" ").replace(/[.,;:?!]+$/, "");
+    close();
+    var pick = null, j;
+    for (j = 0; j < runs.length; j++) { if (runs[j].length >= 4) { pick = runs[j]; break; } }
+    if (!pick) pick = runs.sort(function (a, b) { return b.length - a.length; })[0] || [];
+    return pick.slice(0, 9).join(" ").replace(/[.,;:?!]+$/, "");
   }
   function sourceLink(p) {
     var st = WORKS[work].sourceText;
-    if (!st || !p.quote) return "";
-    var gn = (p.group != null) ? p.group : p.episode;
+    if (!st || !p.quote || p.kind === "route") return "";   // routes carry no text quote
+    // Chapter/story ordinal = position of the feature's group in the work's
+    // group list (Gutenberg HTML anchors run chap01, chap02 … in that order).
+    // Falls back to a numeric group/episode if the story isn't found.
+    var idx = groupsOf().findIndex(function (g) { return g.key === p.story; });
+    var gn = idx >= 0 ? idx + 1 : (p.group != null ? p.group : p.episode);
     var anchor = (st.anchor || "").replace("{n2}", String(gn).padStart(2, "0"))
                                   .replace("{n}", String(gn));
-    var href = st.url + "#" + anchor + ":~:text=" + encodeURIComponent(srcSnippet(p.quote));
+    // A fixed `srcText` (verbatim from the source page) wins over a fragment
+    // generated from the displayed quote — lets the quote text differ from the
+    // edition without breaking the highlight.
+    var frag = p.srcText || srcSnippet(p.quote);
+    var href = st.url + "#" + anchor + ":~:text=" + encodeURIComponent(frag);
     var label = (st.label && st.label[lang]) || st.label || "source";
     return '<a class="pop-src" target="_blank" rel="noopener" href="' + href + '">↗ ' + esc(label) + "</a>";
   }
