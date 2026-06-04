@@ -59,9 +59,9 @@
     if (!st || !p.quote || p.kind === "route") return "";   // routes carry no text quote
     // Chapter/story ordinal = position of the feature's group in the work's
     // group list (Gutenberg HTML anchors run chap01, chap02 … in that order).
-    // Falls back to a numeric group/episode if the story isn't found.
+    // Falls back to the numeric `group` if the story isn't found.
     var idx = groupsOf().findIndex(function (g) { return g.key === p.story; });
-    var gn = idx >= 0 ? idx + 1 : (p.group != null ? p.group : p.episode);
+    var gn = idx >= 0 ? idx + 1 : p.group;
     var anchor = (st.anchor || "").replace("{n2}", String(gn).padStart(2, "0"))
                                   .replace("{n}", String(gn));
     // A fixed `srcText` (verbatim from the source page) wins over a fragment
@@ -79,9 +79,8 @@
     if (p.kind === "route") h += ' <span style="font-weight:400;color:#9a8a7a">(' + t.route + ")</span>";
     h += "</div>";
     var sub = titleFor(p.story);
-    // geocode_source.py emits the group number as `group`; the older
-    // geocode_ulysses.py used `episode`. Accept either for the group prefix.
-    var epNum = (p.group != null) ? p.group : p.episode;
+    // The data schema carries the group number as `group` (geocode_source.py).
+    var epNum = p.group;
     var gp = WORKS[work].groupPrefix;          // e.g. {en:"Episode"} or null
     if (gp && epNum != null) sub = gp[lang] + " " + epNum + " · " + sub;
     h += '<div class="pop-story">' + esc(sub);

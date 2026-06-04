@@ -134,22 +134,38 @@ step of Russian NER.
 
 ## Data schema
 
-**Rendered GeoJSON** — each `Feature.properties`:
+**Rendered GeoJSON — the data contract the engine reads.** Every
+`Feature.properties` key below is one the engine actually consumes; the
+pipeline emits *only* these (no decorative or duplicate fields — which work a
+feature belongs to is implied by the file it lives in, and group titles come
+from `config`, not the data).
 
-| key | meaning |
-|-----|---------|
-| `work` | which work (matches a key in `config.works`) |
-| `group` / `story` | group number + title (episode/chapter/story) |
-| `name` | place / route label |
-| `kind` | `place` \| `route` |
-| `character` | mover(s), comma-separated (for trajectories) |
-| `tier` | `key` \| `waypoint` \| `other` (planned) |
-| `time`, `gloss`, `quote`, `ref` | popup content |
-| geometry | `Point` (place) or `LineString` (route) |
+| key | req? | meaning |
+|-----|------|---------|
+| `story` | **required** | the group's title — must match a `config.works.<w>.groups[].key` |
+| `name` | **required** | place / route label |
+| `kind` | **required** | `place` \| `route` (also inferable from geometry) |
+| `group` | optional | numeric group ordinal; used for the `groupPrefix` popup label ("Episode 4 ·") and as the source-text anchor fallback. Absent for unnumbered works (Dubliners). |
+| `character` | optional | mover(s), comma-separated (for trajectories) |
+| `time` | optional | clock time chip in the popup |
+| `gloss` | optional | editorial note |
+| `quote` | optional | verbatim text quotation |
+| `page` \| `ref` | optional | citation shown under the quote — two interchangeable styles (a page number vs. an "episode.line" / chapter ref); a feature uses whichever fits its work |
+| `srcText` | optional | verbatim source-page fragment for the "in context" deep link, when it must differ from the displayed `quote` |
+| `verified` | optional | `false` flags an unchecked node (legend + popup badge); omit it for stable layers |
+| geometry | **required** | `Point` (place) or `LineString` (route) |
+
+> One contract, minor justified per-work variation: numbered works carry
+> `group` + `time`; experimental layers carry `verified`; citation is `page`
+> *or* `ref`. Nothing else is emitted. (Historically the data also carried
+> `work`, `group_de`, `story_label` and a raw `description` blob — all removed,
+> as the engine never read them.)
 
 **Editable source** (`*-source.json`) — `groups`/`episodes`/`chapters` list +
 `places` + optional `routes` (with `from`/`to` + cached `coords`, `mode`).
-`pipeline/geocode_source.py` turns source → GeoJSON.
+The source may use `episode` as the per-place group key (Ulysses) or `group`;
+`pipeline/geocode_source.py` normalises it to `group` and turns source →
+GeoJSON.
 
 ## Rights model (per layer — important for a public template)
 
