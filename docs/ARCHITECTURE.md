@@ -1,10 +1,11 @@
 # Architecture & Blueprint
 
-This project is being shaped into a **reusable, config- and data-driven engine
-for literary-geography maps** — take one or more texts, curate their places /
+This project is built on a **reusable, config- and data-driven engine for
+literary-geography maps** — take one or more texts, curate their places /
 routes / characters, and present them on an interactive OpenStreetMap-based map
-with layers, popups, trajectories and a text-processing (NER/verification)
-pipeline. *mappingJoyce* is the reference example.
+with layers, popups and a text-processing (NER/verification) pipeline. The
+engine was extracted into the standalone **[litmap](https://github.com/hermesj/litmap)**
+template; *mappingJoyce* is its reference example.
 
 The litmus test for the blueprint: **you can stand up a new project (a
 different author/city) by editing `config.json` and adding data — without
@@ -14,16 +15,17 @@ touching engine code.**
 
 | Layer | What it is | Project-specific? |
 |-------|------------|-------------------|
-| **engine/** | Leaflet rendering, accordion sidebar, layer/work toggle, popups, trajectories | No — generic |
-| **config.json** | declares works, groups, colours, i18n strings, default view + region, basemap, attribution, popup fields, layer dimensions | **Yes** |
+| **engine/** | Leaflet rendering, accordion sidebar, layer/work toggle, popups (character trajectories *planned*) | No — generic |
+| **config.json** | declares works, groups, colours, i18n strings, default view + region, basemap + attribution, per-work group numbering + source-text links | **Yes** |
 | **data/** | GeoJSON (rendered) + `*-source.json` (hand-editable) per work | **Yes** |
-| **pipeline/** | geocode + routing (OSRM/BRouter), KML export, uMap round-trip | No — generic, parametrised |
+| **pipeline/** | geocode + routing (OSRM/BRouter); optional KML export + uMap round-trip | No — generic, parametrised |
 | **text/** | episode/section splitter (markers/regex/incipits), NER annotate + candidates | splitter config is project-specific; NER is generic |
 
-Today everything works, but the engine (`engine.js`) still hardcodes the
-Joyce-specific parts (the `WORKS`/`*_GROUPS` tables, taglines, the Dublin
-bounding box, the "Episode N ·" prefix, the basemap + attribution). Phase B
-moves those into `config.json`.
+The engine (`engine.js`) is **fully config-driven** (Phase B, done): every
+Joyce-specific part — the works/groups tables, taglines, the Dublin bounding
+box, the "Episode N ·" prefix, the basemap + attribution — lives in
+`config.json`, not the code. The engine carries no project literals, which is
+what let it be lifted into the standalone **litmap** template (Phase C, done).
 
 ## Generic components (what the engine/template must provide)
 
@@ -100,37 +102,48 @@ and Dostoevsky's *Crime and Punishment* (Petersburg) are both excellent second
 examples — Dickens the smoothest (English, one city), Dostoevsky with the extra
 step of Russian NER.
 
-## `config.json` schema (target)
+## `config.json` schema
+
+The project file the engine reads at startup (excerpt — see the live
+`config.json` for the full thing):
 
 ```jsonc
 {
   "site":    { "title": "Mapping Joyce", "defaultWork": "dubliners",
-               "languages": ["en"], "defaultLang": "en" },
+               "defaultLang": "en", "impressum": "<h2>…</h2>" },   // impressum HTML optional
   "basemap": { "url": "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
                "maxZoom": 19, "attribution": "© OpenStreetMap contributors © CARTO" },
   "view":    { "center": [53.3478, -6.2597], "zoom": 13,
-               "regionBBox": [53.0, -6.75, 53.7, -6.0] },   // [S,W,N,E] = opening extent
-  "popup":   { "fields": ["episodePrefix", "time", "character", "gloss", "quote"] },
+               "regionBBox": [53.0, -6.7, 53.7, -6.0] },   // [S,W,N,E] = opening extent
+  "ui":      { "en": { "showAll": "Show all", "route": "Route", "page": "p.", "…": "…" },
+               "de": { "…": "…" } },                        // i18n UI strings
   "works": {
     "dubliners": {
-      "label": { "en": "Dubliners", "de": "Dubliner" },
-      "tagline": { "en": "The places of Joyce's Dubliners, mapped." },
+      "label":   { "en": "Dubliners", "de": "Dubliner" },
+      "tagline": { "en": "…", "de": "…" },
+      "credit":  { "en": "Geodata derived from … (CC BY-NC 4.0)", "de": "…" },
       "data": "data/dubliners.geojson",
       "experimental": false,
-      "credit": "Geodata derived from the Mapping Dubliners Project … (CC BY-NC 4.0)",
-      "groupKey": "story",            // feature property used to group/colour
-      "groupPrefix": null,            // e.g. {"en":"Episode"} renders "Episode 3 · …"
-      "layerDimensions": ["group"],   // ["group","character","tier"] → toggleable views
+      "numberedGroups": false,         // sidebar "1. …" numbering
+      "groupPrefix": null,             // e.g. {"en":"Episode"} → popup "Episode 3 · …"
+      "sourceText": {                  // optional: deep-link quotes into a PD text
+        "url": "https://www.gutenberg.org/…/pg2814-images.html",
+        "anchor": "chap{n2}", "label": { "en": "in context (Gutenberg)", "de": "…" }
+      },
       "groups": [
-        { "key": "The Sisters", "label": { "de": "Die Schwestern" }, "color": "#b5651d" }
-        /* … */
+        { "key": "The Sisters", "de": "Die Schwestern", "color": "#b5651d" }
+        /* … one per story/episode/chapter; `key` matches a feature's `story` */
       ]
     }
-    /* ulysses: groupPrefix {"en":"Episode"}, experimental true,
-       layerDimensions ["group","character"] … */
+    /* ulysses: experimental true, numberedGroups true, groupPrefix {"en":"Episode"},
+       sourceText → Gutenberg #4300 … */
   }
 }
 ```
+
+> *Planned extension* (not in the schema yet): a per-work `layerDimensions`
+> (`["group","character","tier"]`) to toggle views by character or tier — the
+> basis for the movement-profile feature (Roadmap D).
 
 ## Data schema
 
@@ -191,8 +204,12 @@ GeoJSON.
 ## Roadmap
 
 - **A. Spec** *(this document)* — define the engine/config/data contract. ✅
-- **B. Config-driven engine** — extract all Joyce-specific literals from
-  `engine.js` into `config.json`; Joyce keeps working at every step.
-- **C. Template-ise** — split `engine/` ↔ `example-joyce/` ↔ `template/` +
-  `docs/`; per-layer licences; validate with a tiny second example; publish as a
-  GitHub template repository.
+- **B. Config-driven engine** — all Joyce-specific literals moved out of
+  `engine.js` into `config.json`; Joyce kept working at every step. ✅
+- **C. Template-ise** — generic `engine/` + `pipeline/` + `docs/`; per-layer
+  licences; validated with a tiny second example (Demoville); published as the
+  separate **[litmap](https://github.com/hermesj/litmap)** GitHub template repo,
+  with mappingJoyce as its reference example. ✅
+- **D. Movement profiles** *(planned)* — a `tier` classification
+  (key / waypoint / mention) plus per-character trajectories and character/tier
+  layer toggles (`layerDimensions`).
