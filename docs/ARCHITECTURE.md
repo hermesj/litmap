@@ -130,6 +130,10 @@ The project file the engine reads at startup (excerpt — see the live
         "url": "https://www.gutenberg.org/…/pg2814-images.html",
         "anchor": "chap{n2}", "label": { "en": "in context (Gutenberg)", "de": "…" }
       },
+      "essay": {                       // optional: a feature.essay URL → "further reading" link
+        "source": "Mapping Dubliners",
+        "label": { "place": { "en": "about this place" }, "route": { "en": "about this route" } }
+      },
       "groups": [
         { "key": "The Sisters", "de": "Die Schwestern", "color": "#b5651d" }
         /* … one per story/episode/chapter; `key` matches a feature's `story` */
@@ -165,6 +169,7 @@ from `config`, not the data).
 | `quote` | optional | verbatim text quotation |
 | `page` \| `ref` | optional | citation shown under the quote — two interchangeable styles (a page number vs. an "episode.line" / chapter ref); a feature uses whichever fits its work |
 | `srcText` | optional | verbatim source-page fragment for the "in context" deep link, when it must differ from the displayed `quote` |
+| `essay` | optional | URL of a secondary "further reading" link (the per-work `essay` config supplies its label + source name) |
 | `verified` | optional | `false` flags an unchecked node (legend + popup badge); omit it for stable layers |
 | geometry | **required** | `Point` (place) or `LineString` (route) |
 

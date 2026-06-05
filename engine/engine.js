@@ -73,6 +73,21 @@
     return '<a class="pop-src" target="_blank" rel="noopener" href="' + href + '">↗ ' + esc(label) + "</a>";
   }
 
+  // Optional secondary "further reading" link, from a per-work `essay` config
+  // ({source, label:{place,route}}) plus a feature's own `essay` URL — e.g. the
+  // Mapping Dubliners per-place essays. Sits at the foot of the popup.
+  function essayLink(p) {
+    var e = WORKS[work].essay;
+    if (!e || !p.essay) return "";
+    var kind = p.kind === "route" ? "route" : "place";
+    var lo = e.label && e.label[kind];
+    var lbl = (lo && (lo[lang] || lo.en || lo)) ||
+              (kind === "route" ? "about this route" : "about this place");
+    var src = e.source ? " (" + e.source + ")" : "";
+    return '<a class="pop-essay" target="_blank" rel="noopener" href="' +
+      esc(p.essay) + '">📖 ' + esc(lbl) + esc(src) + " →</a>";
+  }
+
   function popupHtml(p) {
     var t = UI[lang];
     var h = '<div class="pop-name">' + esc(p.name);
@@ -96,6 +111,7 @@
       else if (p.ref) h += '<span class="pop-page">' + esc(p.ref) + "</span>";
       h += "</div>";
     }
+    h += essayLink(p);
     if (p.verified === false) h += '<div class="pop-unverified">⚠ not yet verified</div>';
     return h;
   }

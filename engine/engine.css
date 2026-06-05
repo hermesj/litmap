@@ -301,6 +301,17 @@ header .tagline {
   border-bottom: 1px solid rgba(120, 90, 60, 0.35);
 }
 .pop-src:hover { color: #3a2a1a; border-bottom-color: rgba(60, 40, 25, 0.7); }
+.pop-essay {
+  display: block;
+  margin-top: 0.6em;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: #6a5037;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(120, 90, 60, 0.35);
+  width: fit-content;
+}
+.pop-essay:hover { color: #3a2a1a; border-bottom-color: rgba(60, 40, 25, 0.7); }
 .pop-unverified {
   margin-top: 0.5em;
   font-size: 0.7rem;
