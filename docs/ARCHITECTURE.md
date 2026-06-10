@@ -122,7 +122,14 @@ The project file the engine reads at startup (excerpt — see the live
       "label":   { "en": "Dubliners", "de": "Dubliner" },
       "tagline": { "en": "…", "de": "…" },
       "credit":  { "en": "Geodata derived from … (CC BY-NC 4.0)", "de": "…" },
-      "data": "data/dubliners.geojson",
+      "data": [                        // one file (string) or several; an entry is
+        { "url": "data/dubliners.geojson",     "source": "mulliken" },  // a bare URL
+        { "url": "data/dubliners-own.geojson", "source": "own" }        // or {url, source}
+      ],
+      "sources": {                     // optional: a popup byline per source tag
+        "own": { "byline": { "en": "Added by … — not part of the base layer" } }
+      },
+      "annotations": "data/dubliners-annotations.json",  // optional editorial overlay
       "experimental": false,
       "numberedGroups": false,         // sidebar "1. …" numbering
       "groupPrefix": null,             // e.g. {"en":"Episode"} → popup "Episode 3 · …"
@@ -170,6 +177,8 @@ from `config`, not the data).
 | `page` \| `ref` | optional | citation shown under the quote — two interchangeable styles (a page number vs. an "episode.line" / chapter ref); a feature uses whichever fits its work |
 | `srcText` | optional | verbatim source-page fragment for the "in context" deep link, when it must differ from the displayed `quote` |
 | `essay` | optional | URL of a secondary "further reading" link (the per-work `essay` config supplies its label + source name) |
+| `source` | optional | provenance tag; the per-work `sources` config maps it to a popup byline (e.g. own additions vs. a derived base layer). May be set per feature or stamped from the `data` file it came from. |
+| `seq` | optional | ordering key; the engine stable-sorts features by it (within their group), letting annotations reorder the list and own additions interleave with the base. |
 | `verified` | optional | `false` flags an unchecked node (legend + popup badge); omit it for stable layers |
 | geometry | **required** | `Point` (place) or `LineString` (route) |
 
@@ -178,6 +187,18 @@ from `config`, not the data).
 > *or* `ref`. Nothing else is emitted. (Historically the data also carried
 > `work`, `group_de`, `story_label` and a raw `description` blob — all removed,
 > as the engine never read them.)
+
+**Annotation overlay** (optional, `data/<work>-annotations.json`, pointed to by
+`config.works.<w>.annotations`) — an *editorial layer on top of the base data*,
+authored separately from it. Shape: `{ "<feature-id>": { field: value, … } }`,
+where the id is derived as `slug(story)/slug(name)` (`-2`/`-3` for duplicates)
+identically in `engine.js` and `pipeline/overlay.py`. The engine merges the
+patch onto matching features **at load time** — the base GeoJSON is never
+modified, so provenance stays clean and removing a patch just drops it on
+reload. Edited with the local tool `pipeline/annotate-ui/` (stdlib, never
+deployed). This is how field-level cross-author contributions are kept distinct
+(e.g. Mulliken's place data vs. character/time annotations added by someone
+else), with provenance recorded in `data/NOTICE.md`.
 
 **Editable source** (`*-source.json`) — `groups`/`episodes`/`chapters` list +
 `places` + optional `routes` (with `from`/`to` + cached `coords`, `mode`).

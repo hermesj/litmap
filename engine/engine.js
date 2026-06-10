@@ -15,6 +15,7 @@
   var work;          // set from ?work= or config.site.defaultWork once loaded
 
   var map, layers = {}, bounds = {}, placesByGroup = {};
+  var selectedRoute = null;   // stays highlighted after its popup closes, until another feature is picked
 
   function groupsOf() { return WORKS[work].groups; }
   function groupFor(story) {
@@ -22,6 +23,20 @@
   }
   function colorFor(story) { var g = groupFor(story); return g ? g.color : "#777"; }
   function titleFor(story) { var g = groupFor(story); return g ? (lang === "de" ? g.de : g.key) : story; }
+
+  // Route line styling: thin dashed by default; when its popup is open the route
+  // is emphasised (thick, solid, on top) so it stands out from sibling routes
+  // that share the same group colour. The colour itself never changes.
+  var ROUTE_STYLE = { weight: 3, opacity: 0.65, dashArray: "5,5" };
+  function routeStyle(color) {
+    return { color: color, weight: ROUTE_STYLE.weight,
+             opacity: ROUTE_STYLE.opacity, dashArray: ROUTE_STYLE.dashArray };
+  }
+  function highlightRoute(layer, on) {
+    if (!layer || !(layer instanceof L.Polyline) || !layer.setStyle) return;
+    if (on) { layer.setStyle({ weight: 6, opacity: 1, dashArray: null }); layer.bringToFront(); }
+    else { layer.setStyle({ weight: ROUTE_STYLE.weight, opacity: ROUTE_STYLE.opacity, dashArray: ROUTE_STYLE.dashArray }); }
+  }
 
   function esc(s) {
     return (s || "").replace(/[&<>]/g, function (c) {
@@ -56,7 +71,11 @@
   }
   function sourceLink(p) {
     var st = WORKS[work].sourceText;
-    if (!st || !p.quote || p.kind === "route") return "";   // routes carry no text quote
+    if (!st || !p.quote) return "";
+    // A route only gets a deep link when it carries a pinned, verbatim `srcText`
+    // fragment: a route's quote is usually a representative passage, and a
+    // snippet generated from it may not match the source page verbatim.
+    if (p.kind === "route" && !p.srcText) return "";
     // Chapter/story ordinal = position of the feature's group in the work's
     // group list (Gutenberg HTML anchors run chap01, chap02 … in that order).
     // Falls back to the numeric `group` if the story isn't found.
@@ -88,6 +107,17 @@
       esc(p.essay) + '">📖 ' + esc(lbl) + esc(src) + " →</a>";
   }
 
+  // Provenance byline for a feature whose `source` has an entry (with a byline)
+  // in the per-work `sources` config — e.g. flagging own additions as distinct
+  // from the derived base layer. Default-source features get no byline.
+  function sourceByline(p) {
+    var sm = WORKS[work].sources;
+    if (!sm || !p.source || !sm[p.source]) return "";
+    var b = sm[p.source].byline;
+    var txt = b && (b[lang] || b.en || b);
+    return txt ? '<div class="pop-source">' + esc(txt) + "</div>" : "";
+  }
+
   function popupHtml(p) {
     var t = UI[lang];
     var h = '<div class="pop-name">' + esc(p.name);
@@ -113,6 +143,7 @@
     }
     h += essayLink(p);
     if (p.verified === false) h += '<div class="pop-unverified">⚠ not yet verified</div>';
+    h += sourceByline(p);
     return h;
   }
 
@@ -139,6 +170,58 @@
     return Math.max(120, (map ? map.getSize().y : 600) - 64);
   }
 
+  // ── Annotation overlay ──────────────────────────────────────────────────
+  // A work may carry an optional `annotations` file (id → patch). The base
+  // GeoJSON layers stay untouched; the patch fields are merged onto matching
+  // features at load time (so removing a patch simply drops it on reload, and
+  // provenance stays clean: base = the data files, annotations = this overlay).
+  // The id is derived identically here and in pipeline/overlay.py.
+  function annSlug(s) {
+    return (s == null ? "" : String(s)).toLowerCase()
+      .replace(/['’.]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+  function assignIds(features) {
+    var seen = {}, ids = [];
+    features.forEach(function (f) {
+      var b = annSlug(f.properties.story) + "/" + annSlug(f.properties.name);
+      seen[b] = (seen[b] || 0) + 1;
+      ids.push(seen[b] === 1 ? b : b + "-" + seen[b]);
+    });
+    return ids;
+  }
+  function loadOverlay() {
+    var path = WORKS[work].annotations;
+    if (!path) return Promise.resolve({});
+    // no-cache: revalidate so a just-saved annotation shows up on plain reload
+    return fetch(path, { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (o) { return (o && o.annotations) || {}; })
+      .catch(function () { return {}; });
+  }
+  function applyOverlay(features, ann) {
+    if (!ann || !Object.keys(ann).length) return;
+    var ids = assignIds(features);
+    features.forEach(function (f, i) {
+      var patch = ann[ids[i]];
+      if (!patch) return;
+      Object.keys(patch).forEach(function (k) {
+        if (k === "lat" || k === "lon" || k === "coords") return;   // geometry, handled below
+        f.properties[k] = patch[k];
+      });
+      // Geometry overrides (correcting a base feature's placement).
+      if (patch.coords) f.geometry = { type: "LineString", coordinates: patch.coords };
+      else if (patch.lat != null && patch.lon != null)
+        f.geometry = { type: "Point", coordinates: [patch.lon, patch.lat] };
+    });
+  }
+  function sortBySeq(features) {
+    features.forEach(function (f, i) { f.__i = i; });
+    features.sort(function (a, b) {
+      var sa = a.properties.seq == null ? Infinity : a.properties.seq;
+      var sb = b.properties.seq == null ? Infinity : b.properties.seq;
+      return sa === sb ? a.__i - b.__i : sa - sb;
+    });
+  }
+
   function loadWork() {
     clearLayers();
     groupsOf().forEach(function (g) { layers[g.key] = L.layerGroup().addTo(map); });
@@ -146,11 +229,29 @@
     placesByGroup = {};
     groupsOf().forEach(function (g) { placesByGroup[g.key] = []; });
 
-    fetch(WORKS[work].data)
-      .then(function (r) { return r.json(); })
-      .then(function (geo) {
-        var all = L.latLngBounds([]), region = L.latLngBounds([]);
+    // `data` may be one file (string) or several. An array entry can be a bare
+    // URL or { url, source } — the source is stamped onto each loaded feature
+    // (unless it carries its own), so layers of different provenance (e.g.
+    // Mulliken-derived vs. own additions) can live in separate files yet render
+    // together. Files are concatenated in order.
+    var entries = WORKS[work].data;
+    if (!Array.isArray(entries)) entries = [entries];
+    entries = entries.map(function (e) { return typeof e === "string" ? { url: e } : e; });
+    Promise.all(entries.map(function (e) {
+      return fetch(e.url).then(function (r) { return r.json(); }).then(function (geo) {
         geo.features.forEach(function (f) {
+          if (e.source && f.properties.source == null) f.properties.source = e.source;
+        });
+        return geo.features;
+      });
+    }))
+      .then(function (lists) {
+        var features = Array.prototype.concat.apply([], lists);
+        return loadOverlay().then(function (ann) {
+        applyOverlay(features, ann);   // merge each feature's annotation patch (by id)
+        sortBySeq(features);           // honour an optional `seq` ordering key
+        var all = L.latLngBounds([]), region = L.latLngBounds([]);
+        features.forEach(function (f) {
           var p = f.properties, grp = layers[p.story];
           if (!grp) return;
           var layer;
@@ -162,7 +263,7 @@
             (bounds[p.story] = bounds[p.story] || L.latLngBounds([])).extend(ll);
           } else if (f.geometry.type === "LineString") {
             var lls = f.geometry.coordinates.map(function (c) { return [c[1], c[0]]; });
-            layer = L.polyline(lls, { color: colorFor(p.story), weight: 3, opacity: 0.65, dashArray: "5,5" });
+            layer = L.polyline(lls, routeStyle(colorFor(p.story)));
             lls.forEach(function (ll) {
               all.extend(ll); if (inRegion(ll[0], ll[1])) region.extend(ll);
               (bounds[p.story] = bounds[p.story] || L.latLngBounds([])).extend(ll);
@@ -185,6 +286,7 @@
         if (region.isValid()) map.fitBounds(region.pad(0.05));
         else if (all.isValid()) map.fitBounds(all.pad(0.05));
         buildSidebar();
+        });
       })
       .catch(function (e) {
         document.getElementById("story-list").innerHTML =
@@ -388,7 +490,12 @@
         // settle steps so the popup ends up fully inside the pane, below the
         // header — a single autoPan pass undershoots for tall popups.
         map.on("popupopen", function (e) {
-          var p = e.popup;
+          var p = e.popup, src = p._source;
+          // Selecting a new feature drops the previous route's highlight; a route
+          // then stays emphasised even after its own popup is closed, until the
+          // next feature is picked (the popup can hide part of the line).
+          if (selectedRoute && selectedRoute !== src) { highlightRoute(selectedRoute, false); selectedRoute = null; }
+          if (src instanceof L.Polyline) { highlightRoute(src, true); selectedRoute = src; }
           p.options.maxHeight = popupMaxHeight();
           p.update();
           [60, 320, 650].forEach(function (d) {

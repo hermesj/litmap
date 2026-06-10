@@ -92,6 +92,7 @@ def main(src_path, out_path, region=None):
     groups = src.get("groups") or src.get("chapters") or src.get("episodes") or []
     by_n = {g["n"]: g for g in groups}
     work = src.get("work", "")
+    prov = src.get("source")          # optional provenance tag → feature.source
     features = []
     changed = False
 
@@ -122,11 +123,13 @@ def main(src_path, out_path, region=None):
             "name": place["name"],
             "kind": place.get("kind", "place"),
         }
-        for k in ("character", "time", "gloss", "quote", "ref"):
+        for k in ("character", "time", "gloss", "quote", "ref", "srcText", "essay"):
             if place.get(k):
                 props[k] = place[k]
         if "verified" in place:           # boolean → presence check, not truthiness
             props["verified"] = place["verified"]
+        if place.get("source", prov):
+            props["source"] = place.get("source", prov)
         features.append({
             "type": "Feature",
             "properties": props,
@@ -158,11 +161,13 @@ def main(src_path, out_path, region=None):
             "group": gn, "story": g.get("en", str(gn)),
             "name": r["name"], "kind": "route",
         }
-        for k in ("character", "time", "gloss", "quote", "ref"):
+        for k in ("character", "time", "gloss", "quote", "ref", "srcText", "essay"):
             if r.get(k):
                 props[k] = r[k]
         if "verified" in r:
             props["verified"] = r["verified"]
+        if r.get("source", prov):
+            props["source"] = r.get("source", prov)
         features.append({
             "type": "Feature",
             "properties": props,

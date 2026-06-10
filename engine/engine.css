@@ -318,6 +318,14 @@ header .tagline {
   letter-spacing: 0.03em;
   color: #a05a1a;
 }
+.pop-source {
+  margin-top: 0.6em;
+  padding-top: 0.4em;
+  border-top: 1px solid rgba(60, 40, 20, 0.12);
+  font-size: 0.66rem;
+  font-style: italic;
+  color: #8a7a6a;
+}
 
 /* ── FOOTER — single credit line (Leaflet's own attribution control is
    disabled in engine.js; work credit + basemap + Leaflet + Impressum all
