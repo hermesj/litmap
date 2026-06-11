@@ -224,6 +224,9 @@
 
   function loadWork() {
     clearLayers();
+    // A work may narrow the opening-view region (e.g. Dubliners' outlying
+    // seaside points would otherwise zoom the start view far out).
+    REGION = WORKS[work].regionBBox || CFG.view.regionBBox;
     groupsOf().forEach(function (g) { layers[g.key] = L.layerGroup().addTo(map); });
 
     placesByGroup = {};

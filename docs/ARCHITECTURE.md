@@ -130,6 +130,8 @@ The project file the engine reads at startup (excerpt — see the live
         "own": { "byline": { "en": "Added by … — not part of the base layer" } }
       },
       "annotations": "data/dubliners-annotations.json",  // optional editorial overlay
+      "regionBBox": [53.27, -6.33, 53.38, -6.09],  // optional per-work opening region
+                                                   // (overrides view.regionBBox)
       "experimental": false,
       "numberedGroups": false,         // sidebar "1. …" numbering
       "groupPrefix": null,             // e.g. {"en":"Episode"} → popup "Episode 3 · …"
