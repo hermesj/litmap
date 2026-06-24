@@ -13,6 +13,7 @@ SHARED=(
   engine/engine.js engine/engine.css engine/VERSION
   pipeline/geocode_source.py pipeline/overlay.py pipeline/check.py
   pipeline/annotate-ui/serve.py pipeline/annotate-ui/app.js pipeline/annotate-ui/index.html
+  pipeline/import_umap.py pipeline/export_umap.py pipeline/consolidate.py
   docs/ARCHITECTURE.md
 )
 VER="$(cat "$SRC/engine/VERSION" 2>/dev/null || echo '?')"
