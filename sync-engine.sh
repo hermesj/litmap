@@ -8,6 +8,7 @@ SRC="$(cd "$(dirname "$0")" && pwd)"
 TARGETS=(
   "$SRC/../mappingPerutz"
   "$SRC/../hermesj.github.io/mappingJoyce"
+  "$SRC/../mappingWoolf"
 )
 SHARED=(
   engine/engine.js engine/engine.css engine/VERSION
