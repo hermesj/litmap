@@ -43,22 +43,43 @@ Then make it yours:
 
 - Multiple **works** with switchable tabs; optional **experimental** badge.
 - Colour-coded, toggleable **groups** in an accordion sidebar; optional
-  numbering and a group **prefix** (e.g. “Stop 1 · …”).
+  numbering, a group **prefix** (e.g. “Stop 1 · …”), per-group **badges**
+  (e.g. clock times) and **hidden-by-default** thematic layers.
 - **Points and routes**; **character** attribution and **time** chips.
-- Scrollable **popups** (gloss / quote / reference), kept clear of the header.
+- Scrollable **popups** (gloss / quote / reference), kept clear of the header;
+  optional deep links into a public-domain **source text**, **further-reading**
+  essays, **Wikidata** authority links and a **fictional-place** marker.
 - A **region bounding box** for the opening view; far-off places stay reachable.
+- **Mobile layout**: full-height map with the sidebar as a bottom sheet.
 
-## Reference example
+Shown by the real projects (not the demo):
 
-The full, real-world project this engine was extracted from is **Mapping
-Joyce** (Joyce's *Dubliners* / *Ulysses* / *A Portrait …*), including the
-text-processing / NER pipeline:
+- **Location-certainty halos** (`confidence`: high / medium / low) with a legend.
+- A **persons register** (prosopography) — characters as stable ids, resolved
+  to names, with their own collapsible sidebar section.
+- One place in **several chapters** (`stories`), an **annotation overlay**
+  edited with the bundled local tool, and a **consolidation** step.
+- i18n is *prepared, not active*: strings are keyed by language, but the UI
+  language is fixed to `site.defaultLang` (see `docs/ARCHITECTURE.md`).
 
-- Live: <https://hermesj.github.io/mappingJoyce/>
-- Source: <https://github.com/hermesj/hermesj.github.io/tree/main/mappingJoyce>
+## Reference examples
 
-It uses this same engine by copy, and additionally demonstrates **one** way to
-*find and verify* places — a spaCy NER pass over the public-domain text.
+Three real projects use this engine by copy (kept in sync with
+`sync-engine.sh`, drift checked by `pipeline/check.py --mirror`):
+
+- **Mapping Joyce** — the project the engine was extracted from (Joyce's
+  *Dubliners* / *Ulysses* / *A Portrait …*; three works, an annotation overlay
+  on a derived base layer, plus the text-processing / NER pipeline).
+  Live: <https://hermesj.github.io/mappingJoyce/> ·
+  Source: <https://github.com/hermesj/hermesj.github.io/tree/main/mappingJoyce>
+- **Mapping Perutz** — Leo Perutz, *Zwischen neun und neun* (Vienna, one day);
+  German-only UI, certainty halos, persons register, multi-chapter places,
+  thematic hidden layers. Live: <https://hermesj.github.io/mappingPerutz/> ·
+  Source: <https://github.com/hermesj/mappingPerutz>
+- **Mapping Woolf** — Virginia Woolf, *Mrs Dalloway* (London, one day).
+
+Mapping Joyce additionally demonstrates **one** way to *find and verify*
+places — a spaCy NER pass over the public-domain text.
 
 ## Bringing your own data
 

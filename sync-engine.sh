@@ -15,7 +15,8 @@ SHARED=(
   pipeline/geocode_source.py pipeline/overlay.py pipeline/check.py
   pipeline/annotate-ui/serve.py pipeline/annotate-ui/app.js pipeline/annotate-ui/index.html
   pipeline/import_umap.py pipeline/export_umap.py pipeline/consolidate.py
-  docs/ARCHITECTURE.md
+  pipeline/geojson_to_kml.py pipeline/README.md pipeline/annotate-ui/README.md
+  docs/ARCHITECTURE.md docs/engine-vs-project.svg
 )
 VER="$(cat "$SRC/engine/VERSION" 2>/dev/null || echo '?')"
 echo "litmap engine v$VER  →  ${#TARGETS[@]} project(s)"
