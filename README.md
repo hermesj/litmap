@@ -77,6 +77,9 @@ Three real projects use this engine by copy (kept in sync with
   thematic hidden layers. Live: <https://hermesj.github.io/mappingPerutz/> ·
   Source: <https://github.com/hermesj/mappingPerutz>
 - **Mapping Woolf** — Virginia Woolf, *Mrs Dalloway* (London, one day).
+- **Mapping Roth** — Joseph Roth, *Das Spinnennetz* (Berlin, 1923); full
+  public-domain text with chapter-wise deep links into Projekt Gutenberg-DE.
+  Live: <https://hermesj.github.io/mappingRoth/>
 
 Mapping Joyce additionally demonstrates **one** way to *find and verify*
 places — a spaCy NER pass over the public-domain text.
